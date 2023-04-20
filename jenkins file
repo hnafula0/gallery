@@ -1,0 +1,45 @@
+pipeline{
+    agent any
+    tools{
+        nodejs 'nodejs-19'
+    }
+    stages{
+        stage('clone the repository'){
+            steps{
+                git 'https://github.com/hnafula0/gallery.git'
+            }
+        }
+        stage('build stage'){
+            steps{
+                sh 'npm install'
+            }
+        }
+        stage('test'){
+            post{
+                failure{
+                    mail bcc: '', body: 'The npm test failed. Build status failed.', cc: '' , from:'', replyTo: '', subject: 'Failed test', to:'hannah.nyongesa@student.moringaschool.com'  
+                }
+            }
+                steps{
+                    sh' npm test'
+                }
+            }
+            stage('email notification on test'){
+                steps{
+                    mail bcc: '', body: 'The build and test were successful. App deploying to heroku. Expect a slack notification once done.', cc: '' , from:'', replyTo: '', subject: 'Build and Test success', to:'hannah.nyongesa@student.moringaschool.com'  
+                }
+            }
+            stage('Deploy to Heroku') {
+  steps {
+    withCredentials([usernameColonPassword(credentialsId: 'galleryip', variable: 'HEROKU_CREDENTIALS' )]){
+      sh 'git push https://${HEROKU_CREDENTIALS}@git.heroku.com/galleryip.git master'
+    }
+  }
+} 
+stage('Slack notification'){
+    steps{
+        slackSend channel: '#hannah_ip1', color: '#008000', message:'Deployment of ${BUIL_ID} to heroku successful click the link to view results. https://galleryip.heroku.com/', tokenCredentialId:'hannah_ip' 
+    }
+}
+            }
+        }
